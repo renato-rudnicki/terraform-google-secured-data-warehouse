@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
+variable "terraform_service_account" {
+  description = "The email address of the service account that will run the Terraform code."
+  type        = string
+}
+
 variable "delete_contents_on_destroy" {
   description = "(Optional) If set to true, delete all the tables in the dataset when destroying the resource; otherwise, destroying the resource will fail if tables are present."
   type        = bool
   default     = false
-}
-
-variable "dataset_labels" {
-  description = "Key value pairs in a map for dataset labels."
-  type        = map(string)
-  default     = {}
 }
 
 variable "data_governance_project_id" {
@@ -36,7 +35,7 @@ variable "confidential_data_project_id" {
   type        = string
 }
 
-variable "non_confidential_project_id" {
+variable "non_confidential_data_project_id" {
   description = "Project with the de-identified dataset and table."
   type        = string
 }

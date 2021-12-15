@@ -15,12 +15,10 @@
  */
 
 locals {
-  region     = "us-east4"
-  dataset_id = "dts_data_ingestion"
-}
-
-resource "random_id" "random_suffix" {
-  byte_length = 4
+  region       = "us-east4"
+  dataset_id   = "dts_data_ingestion"
+  cc_file_name = "cc_10000_records.csv"
+  cc_file_path = "${path.module}/assets"
 }
 
 module "data_ingestion" {
@@ -28,37 +26,32 @@ module "data_ingestion" {
   org_id                           = var.org_id
   data_governance_project_id       = var.data_governance_project_id
   confidential_data_project_id     = var.confidential_data_project_id
-  datalake_project_id              = var.datalake_project_id
+  non_confidential_data_project_id = var.non_confidential_data_project_id
   data_ingestion_project_id        = var.data_ingestion_project_id
   sdx_project_number               = var.sdx_project_number
   terraform_service_account        = var.terraform_service_account
   access_context_manager_policy_id = var.access_context_manager_policy_id
   bucket_name                      = "data-ingestion"
   dataset_id                       = local.dataset_id
-  cmek_keyring_name                = "cmek_keyring_${random_id.random_suffix.hex}"
+  cmek_keyring_name                = "cmek_keyring"
   delete_contents_on_destroy       = var.delete_contents_on_destroy
   perimeter_additional_members     = var.perimeter_additional_members
+  data_engineer_group              = var.data_engineer_group
+  data_analyst_group               = var.data_analyst_group
+  security_analyst_group           = var.security_analyst_group
+  network_administrator_group      = var.network_administrator_group
+  security_administrator_group     = var.security_administrator_group
 }
 
 resource "random_id" "original_key" {
   byte_length = 16
 }
 
-resource "null_resource" "download_sample_cc_into_gcs" {
-  provisioner "local-exec" {
-    command = <<EOF
-    curl http://eforexcel.com/wp/wp-content/uploads/2017/07/1500000%20CC%20Records.zip > cc_records.zip
-    unzip cc_records.zip
-    rm cc_records.zip
-    mv 1500000\ CC\ Records.csv cc_records.csv
-    echo "Changing sample file encoding from ISO-8859-1 to UTF-8"
-    iconv -f="ISO-8859-1" -t="UTF-8" cc_records.csv > temp_cc_records.csv
-    mv temp_cc_records.csv cc_records.csv
-    gsutil cp cc_records.csv gs://${module.data_ingestion.data_ingest_bucket_name}
-    rm cc_records.csv
-EOF
-
-  }
+resource "google_storage_bucket_object" "sample_file" {
+  name         = local.cc_file_name
+  source       = "${local.cc_file_path}/${local.cc_file_name}"
+  content_type = "text/csv"
+  bucket       = module.data_ingestion.data_ingestion_bucket_name
 
   depends_on = [
     module.data_ingestion
@@ -104,14 +97,14 @@ module "regional_dlp" {
   region                  = local.region
   service_account_email   = module.data_ingestion.dataflow_controller_service_account_email
   subnetwork_self_link    = var.subnetwork_self_link
-  kms_key_name            = module.data_ingestion.cmek_ingestion_crypto_key
-  temp_location           = "gs://${module.data_ingestion.data_ingest_dataflow_bucket_name}/tmp/"
-  staging_location        = "gs://${module.data_ingestion.data_ingest_dataflow_bucket_name}/staging/"
+  kms_key_name            = module.data_ingestion.cmek_data_ingestion_crypto_key
+  temp_location           = "gs://${module.data_ingestion.data_ingestion_dataflow_bucket_name}/tmp/"
+  staging_location        = "gs://${module.data_ingestion.data_ingestion_dataflow_bucket_name}/staging/"
   max_workers             = 5
 
   parameters = {
-    inputFilePattern       = "gs://${module.data_ingestion.data_ingest_bucket_name}/cc_records.csv"
-    bqProjectId            = var.datalake_project_id
+    inputFilePattern       = "gs://${module.data_ingestion.data_ingestion_bucket_name}/${local.cc_file_name}"
+    bqProjectId            = var.non_confidential_data_project_id
     datasetName            = local.dataset_id
     batchSize              = 1000
     dlpProjectId           = var.data_governance_project_id

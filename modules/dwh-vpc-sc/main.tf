@@ -16,16 +16,9 @@
 
 locals {
   suffix                         = var.common_suffix != "" ? var.common_suffix : random_id.suffix.hex
-  actual_policy                  = var.access_context_manager_policy_id != "" ? var.access_context_manager_policy_id : google_access_context_manager_access_policy.access_policy[0].name
   perimeter_name                 = "rp_dwh_${var.common_name}_${local.suffix}"
-  regular_service_perimeter_name = "accessPolicies/${local.actual_policy}/servicePerimeters/${local.perimeter_name}"
+  regular_service_perimeter_name = "accessPolicies/${var.access_context_manager_policy_id}/servicePerimeters/${local.perimeter_name}"
   access_policy_name             = "ac_dwh_${var.common_name}_${local.suffix}"
-}
-
-resource "google_access_context_manager_access_policy" "access_policy" {
-  count  = var.access_context_manager_policy_id != "" ? 0 : 1
-  parent = "organizations/${var.org_id}"
-  title  = "default policy"
 }
 
 resource "random_id" "suffix" {
@@ -39,7 +32,7 @@ data "google_project" "target_project" {
 module "access_level_policy" {
   source      = "terraform-google-modules/vpc-service-controls/google//modules/access_level"
   version     = "~> 3.0"
-  policy      = local.actual_policy
+  policy      = var.access_context_manager_policy_id
   name        = local.access_policy_name
   description = "policy with all available options to configure"
 
@@ -49,45 +42,61 @@ module "access_level_policy" {
   regions        = var.access_level_regions
 }
 
-# We are using the terraform resource `google_access_context_manager_service_perimeter`
-# instead of the module "terraform-google-modules/vpc-service-controls/google/modules/regular_service_perimeter"
-# until ingress and egress rules are added to the module https://github.com/terraform-google-modules/terraform-google-vpc-service-controls/issues/53
+# Cannot use the module "terraform-google-modules/vpc-service-controls/google/modules/regular_service_perimeter"
+# because we need to set the  lifecycle of the resource.
 resource "google_access_context_manager_service_perimeter" "regular_service_perimeter" {
   provider       = google
-  parent         = "accessPolicies/${local.actual_policy}"
+  parent         = "accessPolicies/${var.access_context_manager_policy_id}"
   perimeter_type = "PERIMETER_TYPE_REGULAR"
-  name           = "accessPolicies/${local.actual_policy}/servicePerimeters/${local.perimeter_name}"
+  name           = "accessPolicies/${var.access_context_manager_policy_id}/servicePerimeters/${local.perimeter_name}"
   title          = local.perimeter_name
   description    = "perimeter for data warehouse projects"
 
+  lifecycle {
+    ignore_changes = [status[0].resources]
+  }
+
   status {
     restricted_services = var.restricted_services
-    resources           = formatlist("projects/%s", var.resources)
     access_levels = formatlist(
-      "accessPolicies/${local.actual_policy}/accessLevels/%s",
+      "accessPolicies/${var.access_context_manager_policy_id}/accessLevels/%s",
       [module.access_level_policy.name]
     )
 
-    # Configure Egress rule to allow fetch of External Dataflow flex template jobs.
-    # Flex templates in public buckets don't need an egress rule.
     dynamic "egress_policies" {
-      for_each = var.sdx_egress_rule
+      for_each = var.egress_policies
       content {
+        egress_from {
+          identity_type = lookup(egress_policies.value["from"], "identity_type", null)
+          identities    = lookup(egress_policies.value["from"], "identities", null)
+        }
         egress_to {
-          operations {
-            service_name = "storage.googleapis.com"
-            method_selectors {
-              method = "google.storage.objects.get"
+          resources = lookup(egress_policies.value["to"], "resources", ["*"])
+          dynamic "operations" {
+            for_each = lookup(egress_policies.value["to"], "operations", [])
+            content {
+              service_name = operations.key
+              dynamic "method_selectors" {
+                for_each = merge(
+                  { for k, v in lookup(operations.value, "methods", {}) : v => "method" },
+                { for k, v in lookup(operations.value, "permissions", {}) : v => "permission" })
+                content {
+                  method     = method_selectors.value == "method" ? method_selectors.key : ""
+                  permission = method_selectors.value == "permission" ? method_selectors.key : ""
+                }
+              }
             }
           }
-          resources = ["projects/${egress_policies.value.sdx_project_number}"]
-        }
-        egress_from {
-          identities = egress_policies.value.sdx_identities
         }
       }
     }
   }
+}
+
+resource "google_access_context_manager_service_perimeter_resource" "service-perimeter-resource" {
+  for_each       = var.resources
+  perimeter_name = google_access_context_manager_service_perimeter.regular_service_perimeter.name
+  resource       = "projects/${each.value}"
 }
 
 resource "time_sleep" "wait_for_vpc_sc_propagation" {

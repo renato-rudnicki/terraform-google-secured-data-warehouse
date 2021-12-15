@@ -20,6 +20,12 @@ variable "trusted_locations" {
   default     = ["us-locations", "eu-locations"]
 }
 
+variable "trusted_subnetworks" {
+  description = "The URI of the subnetworks where resources are going to be deployed."
+  type        = list(string)
+  default     = []
+}
+
 variable "org_id" {
   description = "GCP Organization ID."
   type        = string
@@ -52,7 +58,7 @@ variable "data_governance_project_id" {
   type        = string
 }
 
-variable "datalake_project_id" {
+variable "non_confidential_data_project_id" {
   description = "The ID of the project in which the Bigquery will be created."
   type        = string
 }
@@ -69,7 +75,8 @@ variable "sdx_project_number" {
 
 variable "access_context_manager_policy_id" {
   description = "The id of the default Access Context Manager policy. Can be obtained by running `gcloud access-context-manager policies list --organization YOUR-ORGANIZATION_ID --format=\"value(name)\"`."
-  type        = number
+  type        = string
+  default     = ""
 }
 
 variable "perimeter_additional_members" {
@@ -113,12 +120,6 @@ variable "confidential_dataset_id" {
   default     = "secured_dataset"
 }
 
-variable "confidential_dataset_default_table_expiration_ms" {
-  description = "TTL of tables using the dataset in MS. The default value is null."
-  type        = number
-  default     = null
-}
-
 variable "dataset_id" {
   description = "Unique ID for the dataset being provisioned."
   type        = string
@@ -127,13 +128,13 @@ variable "dataset_id" {
 variable "dataset_name" {
   description = "Friendly name for the dataset being provisioned."
   type        = string
-  default     = "Ingest dataset"
+  default     = "Data-ingestion dataset"
 }
 
 variable "dataset_description" {
   description = "Dataset description."
   type        = string
-  default     = "Ingest dataset"
+  default     = "Data-ingestion dataset"
 }
 
 variable "dataset_default_table_expiration_ms" {
@@ -143,20 +144,8 @@ variable "dataset_default_table_expiration_ms" {
 }
 
 variable "cmek_keyring_name" {
-  description = "The Keyring name for the KMS Customer Managed Encryption Keys being provisioned."
+  description = "The Keyring prefix name for the KMS Customer Managed Encryption Keys being provisioned."
   type        = string
-}
-
-variable "confidential_access_members" {
-  description = "List of members in the standard GCP form: user:{email}, serviceAccount:{email}, group:{email} who will have access to confidential information in BigQuery."
-  type        = list(string)
-  default     = []
-}
-
-variable "private_access_members" {
-  description = "List of members in the standard GCP form: user:{email}, serviceAccount:{email}, group:{email} who will have access to private information in BigQuery."
-  type        = list(string)
-  default     = []
 }
 
 variable "key_rotation_period_seconds" {
@@ -181,4 +170,86 @@ variable "confidential_data_dataflow_deployer_identities" {
   description = "List of members in the standard GCP form: user:{email}, serviceAccount:{email} that will deploy Dataflow jobs in the Confidential Data project. These identities will be added to the VPC-SC secure data exchange egress rules."
   type        = list(string)
   default     = []
+}
+
+variable "kms_key_protection_level" {
+  description = "The protection level to use when creating a key. Possible values: [\"SOFTWARE\", \"HSM\"]"
+  type        = string
+  default     = "HSM"
+}
+
+variable "security_administrator_group" {
+  description = "Google Cloud IAM group that administers security configurations in the organization(org policies, KMS, VPC service perimeter)."
+  type        = string
+}
+
+variable "network_administrator_group" {
+  description = "Google Cloud IAM group that reviews network configuration. Typically, this includes members of the networking team."
+  type        = string
+}
+
+variable "security_analyst_group" {
+  description = "Google Cloud IAM group that monitors and responds to security incidents."
+  type        = string
+}
+
+variable "data_analyst_group" {
+  description = "Google Cloud IAM group that analyzes the data in the warehouse."
+  type        = string
+}
+
+variable "data_engineer_group" {
+  description = "Google Cloud IAM group that sets up and maintains the data pipeline and warehouse."
+  type        = string
+}
+
+variable "data_ingestion_egress_policies" {
+  description = "A list of all [egress policies](https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules#egress-rules-reference) for the Data Ingestion perimeter, each list object has a `from` and `to` value that describes egress_from and egress_to. See also [secure data exchange](https://cloud.google.com/vpc-service-controls/docs/secure-data-exchange#allow_access_to_a_google_cloud_resource_outside_the_perimeter) and the [VPC-SC](https://github.com/terraform-google-modules/terraform-google-vpc-service-controls/blob/v3.1.0/modules/regular_service_perimeter/README.md) module."
+  type = list(object({
+    from = any
+    to   = any
+  }))
+  default = []
+}
+
+variable "data_governance_egress_policies" {
+  description = "A list of all [egress policies](https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules#egress-rules-reference) for the Data Governance perimeter, each list object has a `from` and `to` value that describes egress_from and egress_to. See also [secure data exchange](https://cloud.google.com/vpc-service-controls/docs/secure-data-exchange#allow_access_to_a_google_cloud_resource_outside_the_perimeter) and the [VPC-SC](https://github.com/terraform-google-modules/terraform-google-vpc-service-controls/blob/v3.1.0/modules/regular_service_perimeter/README.md) module."
+  type = list(object({
+    from = any
+    to   = any
+  }))
+  default = []
+}
+
+variable "confidential_data_egress_policies" {
+  description = "A list of all [egress policies](https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules#egress-rules-reference) for the Confidential Data perimeter, each list object has a `from` and `to` value that describes egress_from and egress_to. See also [secure data exchange](https://cloud.google.com/vpc-service-controls/docs/secure-data-exchange#allow_access_to_a_google_cloud_resource_outside_the_perimeter) and the [VPC-SC](https://github.com/terraform-google-modules/terraform-google-vpc-service-controls/blob/v3.1.0/modules/regular_service_perimeter/README.md) module."
+  type = list(object({
+    from = any
+    to   = any
+  }))
+  default = []
+}
+
+variable "additional_restricted_services" {
+  description = "The list of additional Google services to be protected by the VPC-SC service perimeters."
+  type        = list(string)
+  default     = []
+}
+
+variable "data_ingestion_perimeter" {
+  description = "Existing data ingestion perimeter to be used instead of the auto-crated perimeter. The service account provided in the variable `terraform_service_account` must be in an access level member list for this perimeter **before** this perimeter can be used in this module."
+  type        = string
+  default     = ""
+}
+
+variable "data_governance_perimeter" {
+  description = "Existing data governance perimeter to be used instead of the auto-crated perimeter. The service account provided in the variable `terraform_service_account` must be in an access level member list for this perimeter **before** this perimeter can be used in this module."
+  type        = string
+  default     = ""
+}
+
+variable "confidential_data_perimeter" {
+  description = "Existing confidential data perimeter to be used instead of the auto-crated perimeter. The service account provided in the variable `terraform_service_account` must be in an access level member list for this perimeter **before** this perimeter can be used in this module."
+  type        = string
+  default     = ""
 }

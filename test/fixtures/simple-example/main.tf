@@ -20,11 +20,16 @@ module "simple_example" {
   org_id                           = var.org_id
   data_governance_project_id       = var.data_governance_project_id[1]
   confidential_data_project_id     = var.confidential_data_project_id[1]
-  datalake_project_id              = var.datalake_project_id[1]
+  non_confidential_data_project_id = var.non_confidential_data_project_id[1]
   data_ingestion_project_id        = var.data_ingestion_project_id[1]
   sdx_project_number               = var.sdx_project_number
   terraform_service_account        = var.terraform_service_account
   access_context_manager_policy_id = var.access_context_manager_policy_id
   delete_contents_on_destroy       = true
   perimeter_additional_members     = []
+  data_engineer_group              = var.group_email[1]
+  data_analyst_group               = var.group_email[1]
+  security_analyst_group           = var.group_email[1]
+  network_administrator_group      = var.group_email[1]
+  security_administrator_group     = var.group_email[1]
 }

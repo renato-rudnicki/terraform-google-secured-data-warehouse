@@ -29,7 +29,7 @@ variable "data_governance_project_id" {
   type        = list(string)
 }
 
-variable "datalake_project_id" {
+variable "non_confidential_data_project_id" {
   description = "The ID of the project in which the Bigquery will be created."
   type        = list(string)
 }
@@ -47,6 +47,11 @@ variable "sdx_project_number" {
 variable "org_id" {
   description = "The ID of the organization in which the infrastructure will be created."
   type        = string
+}
+
+variable "group_email" {
+  description = "The group that will be assigned permissions for testing."
+  type        = list(string)
 }
 
 variable "access_context_manager_policy_id" {

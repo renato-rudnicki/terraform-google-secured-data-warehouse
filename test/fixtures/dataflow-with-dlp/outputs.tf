@@ -25,17 +25,12 @@ output "df_job_controller_service_account" {
   value       = module.dataflow_with_dlp.controller_service_account
 }
 
-output "df_job_network" {
-  description = "The name of the network used for create Dataflow job."
-  value       = module.dataflow_with_dlp.df_job_network
-}
-
 output "df_job_subnetwork" {
   description = "The name of the subnetwork used for create Dataflow job."
   value       = module.dataflow_with_dlp.df_job_subnetwork
 }
 
-output "bucket_ingestion_name" {
+output "bucket_data_ingestion_name" {
   description = "The name of the bucket."
-  value       = module.dataflow_with_dlp.bucket_ingestion_name
+  value       = module.dataflow_with_dlp.bucket_data_ingestion_name
 }

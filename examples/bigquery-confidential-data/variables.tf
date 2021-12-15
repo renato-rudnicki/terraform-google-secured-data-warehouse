@@ -21,7 +21,8 @@ variable "org_id" {
 
 variable "access_context_manager_policy_id" {
   description = "The id of the default Access Context Manager policy. Can be obtained by running `gcloud access-context-manager policies list --organization YOUR-ORGANIZATION_ID --format=\"value(name)\"`."
-  type        = number
+  type        = string
+  default     = ""
 }
 
 variable "data_governance_project_id" {
@@ -59,7 +60,7 @@ variable "sdx_project_number" {
   type        = string
 }
 
-variable "non_confidential_project_id" {
+variable "non_confidential_data_project_id" {
   description = "Project with the de-identified dataset and table."
   type        = string
 }
@@ -100,8 +101,27 @@ variable "delete_contents_on_destroy" {
   default     = false
 }
 
-variable "taxonomy_name" {
-  description = "The taxonomy display name."
+variable "security_administrator_group" {
+  description = "Google Cloud IAM group that administers security configurations in the organization(org policies, KMS, VPC service perimeter)."
   type        = string
-  default     = "secured_taxonomy"
+}
+
+variable "network_administrator_group" {
+  description = "Google Cloud IAM group that reviews network configuration. Typically, this includes members of the networking team."
+  type        = string
+}
+
+variable "security_analyst_group" {
+  description = "Google Cloud IAM group that monitors and responds to security incidents."
+  type        = string
+}
+
+variable "data_analyst_group" {
+  description = "Google Cloud IAM group that analyzes the data in the warehouse."
+  type        = string
+}
+
+variable "data_engineer_group" {
+  description = "Google Cloud IAM group that sets up and maintains the data pipeline and warehouse."
+  type        = string
 }

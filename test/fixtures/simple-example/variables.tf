@@ -19,6 +19,11 @@ variable "org_id" {
   type        = string
 }
 
+variable "group_email" {
+  description = "The group that will be assigned permissions for testing."
+  type        = list(string)
+}
+
 variable "terraform_service_account" {
   description = "The email address of the service account that will run the Terraform code."
   type        = string
@@ -34,7 +39,7 @@ variable "data_governance_project_id" {
   type        = list(string)
 }
 
-variable "datalake_project_id" {
+variable "non_confidential_data_project_id" {
   description = "The ID of the project in which the Bigquery will be created."
   type        = list(string)
 }

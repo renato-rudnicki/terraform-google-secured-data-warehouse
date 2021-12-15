@@ -19,7 +19,7 @@ module "secured_data_warehouse" {
   org_id                           = var.org_id
   data_governance_project_id       = var.data_governance_project_id
   confidential_data_project_id     = var.confidential_data_project_id
-  datalake_project_id              = var.datalake_project_id
+  non_confidential_data_project_id = var.non_confidential_data_project_id
   data_ingestion_project_id        = var.data_ingestion_project_id
   sdx_project_number               = var.sdx_project_number
   terraform_service_account        = var.terraform_service_account
@@ -29,4 +29,9 @@ module "secured_data_warehouse" {
   cmek_keyring_name                = "key_name_simple_example"
   delete_contents_on_destroy       = var.delete_contents_on_destroy
   perimeter_additional_members     = var.perimeter_additional_members
+  data_engineer_group              = var.data_engineer_group
+  data_analyst_group               = var.data_analyst_group
+  security_analyst_group           = var.security_analyst_group
+  network_administrator_group      = var.network_administrator_group
+  security_administrator_group     = var.security_administrator_group
 }

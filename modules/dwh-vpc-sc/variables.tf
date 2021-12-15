@@ -26,8 +26,7 @@ variable "project_id" {
 
 variable "resources" {
   description = "A list of GCP resources that are inside of the service perimeter. Currently only projects are allowed."
-  type        = list(string)
-  default     = []
+  type        = map(string)
 }
 
 variable "common_suffix" {
@@ -68,11 +67,11 @@ variable "access_level_regions" {
   default     = []
 }
 
-variable "sdx_egress_rule" {
-  description = "List of Egress rule configurations to allow Dataflow to fetch the Flex template in Cloud Storage in an external project, See: https://cloud.google.com/vpc-service-controls/docs/secure-data-exchange#allow_access_to_a_google_cloud_resource_outside_the_perimeter. `sdx_project_number`, is the Project Number to configure Secure data exchange with the egress rule for the dataflow templates and `sdx_identities`, is the list of email address of the Google Identities that will need to access the external flex template. format is `user:<USER_EMAIL>` or `serviceAccount:<SERVICE_ACCOUNT_EMAIL>`. These are the identities that will deploy Dataflow jobs."
+variable "egress_policies" {
+  description = "A list of all [egress policies](https://cloud.google.com/vpc-service-controls/docs/ingress-egress-rules#egress-rules-reference), each list object has a `from` and `to` value that describes egress_from and egress_to. See also [secure data exchange](https://cloud.google.com/vpc-service-controls/docs/secure-data-exchange#allow_access_to_a_google_cloud_resource_outside_the_perimeter)."
   type = list(object({
-    sdx_project_number = string
-    sdx_identities     = list(string)
+    from = any
+    to   = any
   }))
   default = []
 }

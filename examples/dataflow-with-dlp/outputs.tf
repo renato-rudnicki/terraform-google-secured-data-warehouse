@@ -19,11 +19,6 @@ output "project_id" {
   value       = var.data_ingestion_project_id
 }
 
-output "df_job_network" {
-  description = "The URI of the VPC being created."
-  value       = var.network_self_link
-}
-
 output "df_job_subnetwork" {
   description = "The name of the subnetwork used for create Dataflow job."
   value       = var.subnetwork_self_link
@@ -34,9 +29,9 @@ output "controller_service_account" {
   value       = module.data_ingestion.dataflow_controller_service_account_email
 }
 
-output "bucket_ingestion_name" {
+output "bucket_data_ingestion_name" {
   description = "The name of the bucket."
-  value       = module.data_ingestion.data_ingest_bucket_name
+  value       = module.data_ingestion.data_ingestion_bucket_name
 }
 
 output "dlp_location" {

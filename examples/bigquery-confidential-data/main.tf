@@ -18,11 +18,14 @@ locals {
   location                    = "us-east4"
   non_confidential_dataset_id = "non_confidential_dataset"
   confidential_dataset_id     = "secured_dataset"
-  taxonomy_display_name       = "${var.taxonomy_name}-${random_id.suffix.hex}"
+  dlp_transformation_type     = "RE-IDENTIFY"
+  taxonomy_name               = "secured_taxonomy"
+  taxonomy_display_name       = "${local.taxonomy_name}-${random_id.suffix.hex}"
   confidential_table_id       = "${trimsuffix(local.cc_file_name, ".csv")}_re_id"
   kek_keyring                 = "kek_keyring_${random_id.suffix.hex}"
   kek_key_name                = "kek_key_${random_id.suffix.hex}"
-  cc_file_name                = "cc_100_records.csv"
+  cc_file_name                = "cc_10000_records.csv"
+  cc_file_path                = "${path.module}/assets"
 
 }
 
@@ -36,32 +39,30 @@ module "secured_data_warehouse" {
   org_id                           = var.org_id
   data_governance_project_id       = var.data_governance_project_id
   confidential_data_project_id     = var.confidential_data_project_id
-  datalake_project_id              = var.non_confidential_project_id
+  non_confidential_data_project_id = var.non_confidential_data_project_id
   data_ingestion_project_id        = var.data_ingestion_project_id
   sdx_project_number               = var.sdx_project_number
   terraform_service_account        = var.terraform_service_account
   access_context_manager_policy_id = var.access_context_manager_policy_id
-  bucket_name                      = "bkt-data-ingestion"
+  bucket_name                      = "data-ingestion"
   location                         = local.location
   dataset_id                       = local.non_confidential_dataset_id
   confidential_dataset_id          = local.confidential_dataset_id
-  cmek_keyring_name                = "cmek_keyring_${random_id.suffix.hex}"
+  cmek_keyring_name                = "cmek_keyring"
   delete_contents_on_destroy       = var.delete_contents_on_destroy
   perimeter_additional_members     = var.perimeter_additional_members
+  data_engineer_group              = var.data_engineer_group
+  data_analyst_group               = var.data_analyst_group
+  security_analyst_group           = var.security_analyst_group
+  network_administrator_group      = var.network_administrator_group
+  security_administrator_group     = var.security_administrator_group
 }
 
-resource "null_resource" "download_sample_cc_into_gcs" {
-  provisioner "local-exec" {
-    command = <<EOF
-    curl https://eforexcel.com/wp/wp-content/uploads/2017/07/100-CC-Records.zip > cc_records.zip
-    unzip cc_records.zip
-    echo "Changing sample file encoding from ISO-8859-1 to UTF-8"
-    iconv -f="ISO-8859-1" -t="UTF-8" 100\ CC\ Records.csv > ${local.cc_file_name}
-    gsutil cp ${local.cc_file_name} gs://${module.secured_data_warehouse.data_ingest_bucket_name}
-    rm ${local.cc_file_name} 100\ CC\ Records.csv cc_records.zip
-EOF
-
-  }
+resource "google_storage_bucket_object" "sample_file" {
+  name         = local.cc_file_name
+  source       = "${local.cc_file_path}/${local.cc_file_name}"
+  content_type = "text/csv"
+  bucket       = module.secured_data_warehouse.data_ingestion_bucket_name
 
   depends_on = [
     module.secured_data_warehouse
@@ -123,14 +124,14 @@ module "regional_deid" {
   region                  = local.location
   service_account_email   = module.secured_data_warehouse.dataflow_controller_service_account_email
   subnetwork_self_link    = var.data_ingestion_subnets_self_link
-  kms_key_name            = module.secured_data_warehouse.cmek_ingestion_crypto_key
-  temp_location           = "gs://${module.secured_data_warehouse.data_ingest_dataflow_bucket_name}/tmp/"
-  staging_location        = "gs://${module.secured_data_warehouse.data_ingest_dataflow_bucket_name}/staging/"
+  kms_key_name            = module.secured_data_warehouse.cmek_data_ingestion_crypto_key
+  temp_location           = "gs://${module.secured_data_warehouse.data_ingestion_dataflow_bucket_name}/tmp/"
+  staging_location        = "gs://${module.secured_data_warehouse.data_ingestion_dataflow_bucket_name}/staging/"
   max_workers             = 5
 
   parameters = {
-    inputFilePattern       = "gs://${module.secured_data_warehouse.data_ingest_bucket_name}/${local.cc_file_name}"
-    bqProjectId            = var.non_confidential_project_id
+    inputFilePattern       = "gs://${module.secured_data_warehouse.data_ingestion_bucket_name}/${local.cc_file_name}"
+    bqProjectId            = var.non_confidential_data_project_id
     datasetName            = local.non_confidential_dataset_id
     batchSize              = 1000
     dlpProjectId           = var.data_governance_project_id
@@ -139,8 +140,7 @@ module "regional_deid" {
   }
 
   depends_on = [
-    google_artifact_registry_repository_iam_member.docker_reader,
-    null_resource.download_sample_cc_into_gcs
+    google_artifact_registry_repository_iam_member.docker_reader
   ]
 }
 
@@ -166,12 +166,13 @@ module "regional_reid" {
   staging_location        = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/staging/"
 
   parameters = {
-    inputBigQueryTable        = "${var.non_confidential_project_id}:${local.non_confidential_dataset_id}.${trimsuffix(local.cc_file_name, ".csv")}"
+    inputBigQueryTable        = "${var.non_confidential_data_project_id}:${local.non_confidential_dataset_id}.${trimsuffix(local.cc_file_name, ".csv")}"
     outputBigQueryDataset     = local.confidential_dataset_id
     deidentifyTemplateName    = module.re_identification_template.template_full_path
     dlpLocation               = local.location
     dlpProjectId              = var.data_governance_project_id
     confidentialDataProjectId = var.confidential_data_project_id
+    dlpTransform              = local.dlp_transformation_type
   }
 
   depends_on = [

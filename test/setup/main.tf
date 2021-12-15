@@ -15,14 +15,23 @@
  */
 
 locals {
-  first_project_group  = "1"
-  second_project_group = "2"
-  third_project_group  = "3"
+  first_project_group  = "0"
+  second_project_group = "1"
+  third_project_group  = "2"
   project_groups = toset([
     local.first_project_group,
     local.second_project_group,
     local.third_project_group
   ])
+
+  int_org_required_roles = [
+    "roles/orgpolicy.policyAdmin",
+    "roles/accesscontextmanager.policyAdmin",
+    "roles/resourcemanager.organizationAdmin",
+    "roles/vpcaccess.admin",
+    "roles/compute.xpnAdmin",
+    "roles/billing.user"
+  ]
 }
 
 # ====================== Examples to project groups mapping ================================================
@@ -35,6 +44,7 @@ locals {
 # If that is not possible, try to refactor one of the examples to include your new case.
 # If that is not possible, follow these step to add a new group:
 #  1) Create a new project group and add it to the "project_groups" local,
+#  1.1) Add a new existing Google IAM group in "test/setup/outputs.tf#group_email",
 #  2) In "test/setup/iam.tf" create a new set of "google_project_iam_member" resources for the new group,
 #  3) In your new test fixture use the projects from the new group like "var.data_ingestion_project_id[3]",
 #  4) Update "build/int.cloudbuild.yaml" to create a new sequence of build steps for the new group. The
@@ -43,151 +53,70 @@ locals {
 # See "build/int.cloudbuild.yaml" file for the build of these groups linked by "waitFor:"
 # ==========================================================================================================
 
-resource "random_id" "project_id_suffix" {
-  byte_length = 3
-}
-
-module "data_ingestion_project" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 10.0"
+module "base_projects" {
+  source = "./base-projects"
 
   for_each = local.project_groups
 
-  name              = "ci-sdw-data-ing-${random_id.project_id_suffix.hex}"
-  random_project_id = "true"
-  org_id            = var.org_id
-  folder_id         = var.folder_id
-  billing_account   = var.billing_account
-
-  activate_apis = [
-    "datacatalog.googleapis.com",
-    "cloudresourcemanager.googleapis.com",
-    "storage-api.googleapis.com",
-    "serviceusage.googleapis.com",
-    "iam.googleapis.com",
-    "dns.googleapis.com",
-    "pubsub.googleapis.com",
-    "bigquery.googleapis.com",
-    "accesscontextmanager.googleapis.com",
-    "cloudbilling.googleapis.com",
-    "cloudkms.googleapis.com",
-    "dataflow.googleapis.com",
-    "dlp.googleapis.com",
-    "cloudscheduler.googleapis.com",
-    "cloudbuild.googleapis.com",
-    "appengine.googleapis.com",
-    "artifactregistry.googleapis.com",
-    "compute.googleapis.com"
-  ]
+  org_id          = var.org_id
+  folder_id       = var.folder_id
+  billing_account = var.billing_account
+  region          = "us-east4"
 }
 
-resource "google_app_engine_application" "app" {
-  for_each = module.data_ingestion_project
-
-  project     = each.value.project_id
-  location_id = "us-east4"
-}
-
-module "data_governance_project" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 10.0"
-
+module "iam_projects" {
+  source   = "./iam-projects"
   for_each = local.project_groups
 
-  name              = "ci-sdw-data-gov-${random_id.project_id_suffix.hex}"
-  random_project_id = "true"
-  org_id            = var.org_id
-  folder_id         = var.folder_id
-  billing_account   = var.billing_account
+  data_ingestion_project_id        = module.base_projects[each.key].data_ingestion_project_id
+  non_confidential_data_project_id = module.base_projects[each.key].non_confidential_data_project_id
+  data_governance_project_id       = module.base_projects[each.key].data_governance_project_id
+  confidential_data_project_id     = module.base_projects[each.key].confidential_data_project_id
+  service_account_email            = google_service_account.int_ci_service_account.email
+}
 
-  activate_apis = [
-    "datacatalog.googleapis.com",
-    "cloudresourcemanager.googleapis.com",
-    "storage-api.googleapis.com",
-    "serviceusage.googleapis.com",
-    "iam.googleapis.com",
-    "accesscontextmanager.googleapis.com",
-    "cloudbilling.googleapis.com",
-    "cloudkms.googleapis.com",
-    "dlp.googleapis.com"
+resource "time_sleep" "wait_90_seconds" {
+  create_duration = "90s"
+
+  depends_on = [
+    module.iam_projects
   ]
 }
 
-module "datalake_project" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 10.0"
-
-  for_each = local.project_groups
-
-  name              = "ci-sdw-datalake-${random_id.project_id_suffix.hex}"
-  random_project_id = "true"
-  org_id            = var.org_id
-  folder_id         = var.folder_id
-  billing_account   = var.billing_account
-
-  activate_apis = [
-    "cloudresourcemanager.googleapis.com",
-    "storage-api.googleapis.com",
-    "serviceusage.googleapis.com",
-    "iam.googleapis.com",
-    "bigquery.googleapis.com",
-    "accesscontextmanager.googleapis.com",
-    "cloudbilling.googleapis.com",
-    "cloudkms.googleapis.com"
-  ]
+resource "google_service_account" "int_ci_service_account" {
+  project      = module.base_projects[local.first_project_group].data_ingestion_project_id
+  account_id   = "ci-account"
+  display_name = "ci-account"
 }
 
-module "confidential_data_project" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 10.0"
-
-  for_each = local.project_groups
-
-  name              = "ci-sdw-conf-${random_id.project_id_suffix.hex}"
-  random_project_id = "true"
-  org_id            = var.org_id
-  folder_id         = var.folder_id
-  billing_account   = var.billing_account
-
-  activate_apis = [
-    "cloudresourcemanager.googleapis.com",
-    "storage-api.googleapis.com",
-    "serviceusage.googleapis.com",
-    "iam.googleapis.com",
-    "bigquery.googleapis.com",
-    "accesscontextmanager.googleapis.com",
-    "cloudbilling.googleapis.com",
-    "cloudkms.googleapis.com",
-    "dataflow.googleapis.com",
-    "dlp.googleapis.com",
-    "datacatalog.googleapis.com",
-    "dns.googleapis.com",
-    "compute.googleapis.com",
-    "cloudbuild.googleapis.com",
-    "artifactregistry.googleapis.com"
-  ]
+resource "google_service_account_iam_member" "cloud_build_iam" {
+  service_account_id = google_service_account.int_ci_service_account.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${var.build_project_number}@cloudbuild.gserviceaccount.com"
 }
 
-module "external_flex_template_project" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 10.0"
+resource "google_organization_iam_member" "org_admins_group" {
+  for_each = toset(local.int_org_required_roles)
+  org_id   = var.org_id
+  role     = each.value
+  member   = "serviceAccount:${google_service_account.int_ci_service_account.email}"
+}
 
-  name              = "ci-sdw-ext-flx-${random_id.project_id_suffix.hex}"
-  random_project_id = "true"
-  org_id            = var.org_id
-  folder_id         = var.folder_id
-  billing_account   = var.billing_account
+resource "google_service_account_key" "int_test" {
+  service_account_id = google_service_account.int_ci_service_account.id
+}
 
-  activate_apis = [
-    "cloudresourcemanager.googleapis.com",
-    "storage-api.googleapis.com",
-    "serviceusage.googleapis.com",
-    "iam.googleapis.com",
-    "cloudbilling.googleapis.com",
-    "cloudkms.googleapis.com",
-    "dlp.googleapis.com",
-    "artifactregistry.googleapis.com",
-    "cloudbuild.googleapis.com",
-    "compute.googleapis.com"
-  ]
+resource "google_billing_account_iam_member" "tf_billing_user" {
+  billing_account_id = var.billing_account
+  role               = "roles/billing.admin"
+  member             = "serviceAccount:${google_service_account.int_ci_service_account.email}"
+}
+module "template_project" {
+  source = "./template-project"
+
+  org_id                = var.org_id
+  folder_id             = var.folder_id
+  billing_account       = var.billing_account
+  location              = "us-east4"
+  service_account_email = google_service_account.int_ci_service_account.email
 }
