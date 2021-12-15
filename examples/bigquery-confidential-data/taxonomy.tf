@@ -113,7 +113,7 @@ resource "google_bigquery_table" "re_id" {
   project             = var.confidential_data_project_id
   table_id            = local.confidential_table_id
   friendly_name       = local.confidential_table_id
-  deletion_protection = !var.delete_contents_on_destroy
+  deletion_protection = ! var.delete_contents_on_destroy
 
 
   schema = templatefile("${path.module}/templates/schema.template",

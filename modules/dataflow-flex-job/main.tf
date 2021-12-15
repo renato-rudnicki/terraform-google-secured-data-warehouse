@@ -33,7 +33,7 @@ locals {
     temp_location           = var.temp_location
     staging_location        = var.staging_location
     max_num_workers         = var.max_workers
-    no_use_public_ips       = !var.use_public_ips
+    no_use_public_ips       = ! var.use_public_ips
     enable_streaming_engine = var.enable_streaming_engine
   }
 
