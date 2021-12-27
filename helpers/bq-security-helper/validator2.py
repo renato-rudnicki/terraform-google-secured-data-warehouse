@@ -62,26 +62,3 @@ else:
 #                              if len(values) > 1]  
 #print("duplicate values", str(result))
 
-
-#JSON Válido   
-#validate({"displayName": "Card_Type_Code", "policytag": "projects/269630749177/locations/us-east1/taxonomies/2030734276002480558/policyTags/7623272140653337956"}, schema)
-#validate({"displayName": "xxxxxxxxxxx", "policytag": "projects/000000000000/locations/xx-east1/taxonomies/0000000000000000000/policyTags/0000000000000000000"}, schema)
-
-#JSON Inválido - Verifica se policytag é integer
-#validate({"displayName": "Card_Type_Code", "policytag": 123}, schema)
-
-#JSON Inválido - Verifica se displayName é integer
-#validate({"displayName": 456, "policytag": "projects/000000000000/locations/xx-east1/taxonomies/0000000000000000000/policyTags/0000000000000000000"}, schema)
-
-#JSON Inválido - Não foi passado o campo obrigatório displayName
-#validate({"policytag": "projects/000000000000/locations/xx-east1/taxonomies/0000000000000000000/policyTags/0000000000000000000"}, schema)
-
-#JSON Inválido - Não foi passado o campo obrigatório policyTag
-#validate({"displayName": "Card_Type_Code"}, schema)
-
-####
-
-
-
-
-
