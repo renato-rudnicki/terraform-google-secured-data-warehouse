@@ -1,11 +1,8 @@
 # Policy Tags Helper
 
-This helper will work on Bigquery and Taxonomy to list its schemas and generate a new one. We can find 3 functionalities here: 
-   * Export Bigquery schema
-   * Export Taxonomy list
-   * Generate a new schema crossing Bigquery columns with Taxonomy policy tags.
+This helper will export an existing [Bigquery schema](https://cloud.google.com/bigquery/docs/schemas) and a list of Data Catalog taxonomy tags that will be used together to generate a new Bigquery schema with [column level security](https://cloud.google.com/bigquery/docs/column-level-security).
 
-__Note:__ This helper is mainly for sample purpose. You should use your security team's recommend approach to generate and handle key material properly.
+__Note:__ This helper is mainly for testing purpose. You should contact your security team's to know how to handle column level security configuration.
 
 ## Bigquery security helper usage
 
@@ -40,6 +37,8 @@ source bq_security_helper/bin/activate
 ### Install dependencies
 
 ```sh
+pip install --upgrade pip
+
 pip install -r requirements.txt
 ```
 
@@ -61,7 +60,7 @@ export location=<datacatalog-location>
 export taxonomy_id=<datacatalog-taxonomy-id>
 ```
 
-### Exporting Bigquery schema
+### Exporting existing Bigquery schema
 
 ```sh
 python3 bq_security_helper.py --export bigquery \
@@ -71,7 +70,7 @@ python3 bq_security_helper.py --export bigquery \
 --output_file <filename where the schema will be saved>
 ```
 
-The output_file parameter is optional. If declared, then you need to provide the filename where the Bigquery schema will be saved. If not declared, the output will be showed on screen. 
+The output_file parameter is optional. If not declared, the output will be send to the standard output. 
 
 
 ### Exporting Taxonomy list
@@ -83,32 +82,34 @@ python3 bq_security_helper.py --export datacatalog \
 --taxonomy_id ${taxonomy_id} \
 ```
 
-The output_file parameter is optional. If declared, then you need to provide the filename where the taxonomy list will be saved. If not declared, the output will be showed on screen. 
+The output_file parameter is optional. If not declared, the output will be send to the standard output. 
 
 
-### Generating schema with Bigquery columns and Taxonomy policy tags.
+### Generating a new schema with Bigquery column security using the Taxonomy policy tags
 
 ```sh
 python3 bq_security_helper.py --generate secured_schema \
---schema_mapping map.json \
---bq_input_file schema_bigquery.json \
---bq_generate_schema my_policytags.json
+--bq_input_file bigquery_schema.json \
+--bq_generate_schema exported_policytags.json \
+--schema_mapping column_security_level_map.json
 ```
 
-```sh
---schema_mapping=<Json file created by user mapping Bigquery column crosssing with Policy tags from Taxonomy>
---bq_input_file=<Bigquery schema filename>
-```
+* bigquery_schema.json is the result...
+* exported_policytags.json is the result...
 
-The bq_generate_schema parameter is optional. If declared, then you need to provide the filename where the schema output will be saved. If not declared, the output will be showed on screen. 
+The column_security_level_map.json will be explained in details in the next section.
 
-### Example for --schema_mapping json file
+The OUTPUT_FILE parameter is optional. If not declared, the output will be send to the standard output. 
+
+
+
+### Example for column_security_level_map json file
 
 This file needs to be created by user crossing data from the Bigquery columns and Taxonomy policy tags. This must be a valid json file following the example below: 
 
 ```sh
 {
-  "Bigquery_column_1": [
+  "social_security_number": [
     "projects/1234567890/locations/us-east1/taxonomies/12345678901234567890/policyTags/1111111111"
   ],
   "Bigquery_column_2": [
@@ -119,3 +120,12 @@ This file needs to be created by user crossing data from the Bigquery columns an
   ]
 }
 ```
+
+Considering this schema 
+(exemplo do schema)
+
+and this taxonomy, 
+(exemplo da taxonomia)
+
+ this will be a valid map.
+ (exemplo do map)
