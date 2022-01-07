@@ -181,6 +181,7 @@ module "regional_reid" {
   staging_location        = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/staging/"
 
   parameters = {
+    //query                          = "SELECT * FROM [${module.base_projects.non_confidential_data_project_id}:${local.non_confidential_dataset_id}.${local.non_confidential_table_id}] WHERE name LIKE \"PERSON_NAME%\""
     input_table                    = "${module.base_projects.non_confidential_data_project_id}:${local.non_confidential_dataset_id}.${local.non_confidential_table_id}"
     deidentification_template_name = module.re_identification_template.template_full_path
     window_interval_sec            = 30
