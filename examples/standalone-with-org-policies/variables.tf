@@ -17,7 +17,7 @@
 variable "create_projects" {
   description = "(Optional) If set to true to create new projects for the data warehouse, if set to false existing projects will be used."
   type        = bool
-  default     = false
+  default     = true 
 }
 
 variable "folder_id" {
@@ -58,6 +58,7 @@ variable "confidential_data_project_id" {
 variable "sdx_project_number" {
   description = "The Project Number to configure Secure data exchange with egress rule for the dataflow templates."
   type        = string
+  default     = ""
 }
 
 variable "terraform_service_account" {
@@ -90,24 +91,29 @@ variable "domains_to_allow" {
 variable "security_administrator_group" {
   description = "Google Cloud IAM group that administers security configurations in the organization(org policies, KMS, VPC service perimeter)."
   type        = string
+  default     = ""
 }
 
 variable "network_administrator_group" {
   description = "Google Cloud IAM group that reviews network configuration. Typically, this includes members of the networking team."
   type        = string
+  default     = ""
 }
 
 variable "security_analyst_group" {
   description = "Google Cloud IAM group that monitors and responds to security incidents."
   type        = string
+  default     = ""
 }
 
 variable "data_analyst_group" {
   description = "Google Cloud IAM group that analyzes the data in the warehouse."
   type        = string
+  default     = ""
 }
 
 variable "data_engineer_group" {
   description = "Google Cloud IAM group that sets up and maintains the data pipeline and warehouse."
   type        = string
+  default     = ""
 }
