@@ -43,7 +43,7 @@ module "folders" {
 module "example" {
   source                           = "../../../examples/standalone"
   org_id                           = var.org_id
-  folder_id                        = module.folders.parent
+  folder_id                        = module.folders.names
   billing_account                  = var.billing_account
   #access_context_manager_policy_id = var.policy_id
   #terraform_service_account       = "ci-account@sdw-data-ing-b50b88-ee23.iam.gserviceaccount.com"
