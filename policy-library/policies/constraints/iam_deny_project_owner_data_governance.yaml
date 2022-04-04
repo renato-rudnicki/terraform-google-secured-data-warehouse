@@ -22,8 +22,8 @@ spec:
   severity: high
   match:
     target:
-    - "organizations/**/projects/DATA_GOVERNANCE_PROJECT_ID_1"
-    - "organizations/**/projects/DATA_GOVERNANCE_PROJECT_ID_2"
+    - "organizations/**/projects/sdw-data-gov-ad86be-f889"
+    - "organizations/**/projects/sdw-data-gov-66307f-2ecb"
   parameters:
     mode: denylist
     role: "roles/owner"

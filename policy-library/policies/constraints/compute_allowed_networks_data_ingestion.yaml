@@ -23,9 +23,9 @@ spec:
   match:
     gcp:
       target:
-      - "organizations/**/projects/DATA_INGESTION_PROJECT_ID_1"
-      - "organizations/**/projects/DATA_INGESTION_PROJECT_ID_2"
+      - "organizations/**/projects/sdw-data-ing-ad86be-d8be"
+      - "organizations/**/projects/sdw-data-ing-66307f-26a3"
   parameters:
     allowed:
-    - "DATA_INGESTION_NETWORK_1"
-    - "DATA_INGESTION_NETWORK_2"
+    - "https://www.googleapis.com/compute/v1/projects/sdw-data-ing-ad86be-d8be/global/networks/vpc-ingestion"
+    - "https://www.googleapis.com/compute/v1/projects/sdw-data-ing-66307f-26a3/global/networks/vpc-ingestion"

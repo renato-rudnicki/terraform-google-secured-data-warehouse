@@ -22,8 +22,8 @@ spec:
   severity: high
   match:
     target:
-    - "organizations/**/projects/CONFIDENTIAL_PROJECT_ID_1"
-    - "organizations/**/projects/CONFIDENTIAL_PROJECT_ID_2"
+    - "organizations/**/projects/sdw-conf-ad86be-042d"
+    - "organizations/**/projects/sdw-conf-66307f-3c38"
   parameters:
     mode: "allowlist"
     resource_type_list:

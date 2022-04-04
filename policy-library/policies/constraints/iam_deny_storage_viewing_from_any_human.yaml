@@ -22,8 +22,8 @@ spec:
   severity: high
   match:
     target:
-    - "organizations/**/projects/DATA_INGESTION_PROJECT_ID_1"
-    - "organizations/**/projects/DATA_INGESTION_PROJECT_ID_2"
+    - "organizations/**/projects/sdw-data-ing-ad86be-d8be"
+    - "organizations/**/projects/sdw-data-ing-66307f-26a3"
   parameters:
     mode: denylist
     role: "roles/storage**"

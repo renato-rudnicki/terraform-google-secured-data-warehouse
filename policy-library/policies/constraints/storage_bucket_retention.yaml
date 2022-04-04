@@ -20,7 +20,7 @@ spec:
   severity: high
   match:
     target: # {"$ref":"#/definitions/io.k8s.cli.setters.target_prj_data_etl"}
-    - "organizations/**/projects/DATA_INGESTION_PROJECT_ID_1"
-    - "organizations/**/projects/DATA_INGESTION_PROJECT_ID_2"
+    - "organizations/**/projects/sdw-data-ing-ad86be-d8be"
+    - "organizations/**/projects/sdw-data-ing-66307f-26a3"
   parameters:
     maximum_retention_days: 30
