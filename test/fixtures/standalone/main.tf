@@ -37,20 +37,23 @@ module "folders" {
   parent             = "${var.parent_type}/${var.parent_id}"
   names              = var.names
   set_roles          = var.set_roles
+  per_folder_admins  = var.per_folder_admins
+  all_folder_admins  = var.all_folder_admins
   folder_admin_roles = var.folder_admin_roles
+
+  depends_on = [
+    google_organization_iam_member.standalone-org-roles
+  ]
 }
 
 module "example" {
   source                           = "../../../examples/standalone"
   org_id                           = var.org_id
-  folder_id                        = module.folders.parent
+  folder_id                        = var.parent_id
   billing_account                  = var.billing_account
-  #access_context_manager_policy_id = var.policy_id
-  #terraform_service_account       = "ci-account@sdw-data-ing-b50b88-ee23.iam.gserviceaccount.com"
   access_context_manager_policy_id = var.access_context_manager_policy_id
   terraform_service_account        = var.terraform_service_account
   perimeter_additional_members     = var.perimeter_additional_members
-  #perimeter_additional_members     = []
   delete_contents_on_destroy       = true
   #security_administrator_group     = var.security_administrator_group
   #network_administrator_group      = var.network_administrator_group
@@ -64,7 +67,6 @@ module "example" {
   security_administrator_group     = var.group_email[2]
 
   depends_on = [
-    module.folders,
-    google_organization_iam_member.standalone-org-roles
+    module.folders
   ]
 }
