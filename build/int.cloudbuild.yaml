@@ -17,7 +17,7 @@ steps:
 
 - id: prepare
   name: 'gcr.io/cloud-foundation-cicd/$_DOCKER_IMAGE_DEVELOPER_TOOLS:$_DOCKER_TAG_VERSION_DEVELOPER_TOOLS'
-  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && prepare_environment && cd ../..']
+  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && prepare_environment && cd /workspace']
   env:
   - 'TF_VAR_org_id=$_ORG_ID'
   - 'TF_VAR_folder_id=$_FOLDER_ID'
@@ -30,94 +30,36 @@ steps:
   name: 'gcr.io/cloud-foundation-cicd/$_DOCKER_IMAGE_DEVELOPER_TOOLS:$_DOCKER_TAG_VERSION_DEVELOPER_TOOLS'
   args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && source ./test/ensure_access_policy.sh']
 
-  ###
   - id: create-standalone
   waitFor:
     - ensure-access-policy
   name: 'gcr.io/cloud-foundation-cicd/$_DOCKER_IMAGE_DEVELOPER_TOOLS:$_DOCKER_TAG_VERSION_DEVELOPER_TOOLS'
-  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && sleep 90 && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=init go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd ../..']
-  ### test using the command below: 
-  #source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials &&  ./test/prepare-providers.sh  && sleep 90 && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=init go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd ../..
+  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials &&  ./test/prepare-providers.sh  && sleep 90 && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=init go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd /workspace']
 
 - id: converge-standalone
   waitFor:
     - create-standalone
   name: 'gcr.io/cloud-foundation-cicd/$_DOCKER_IMAGE_DEVELOPER_TOOLS:$_DOCKER_TAG_VERSION_DEVELOPER_TOOLS'
-  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=apply go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd ../..']
+  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=apply go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd /workspace']
 
 - id: validate-standalone
   waitFor:
     - converge-standalone
   name: 'gcr.io/cloud-foundation-cicd/$_DOCKER_IMAGE_DEVELOPER_TOOLS:$_DOCKER_TAG_VERSION_DEVELOPER_TOOLS'
   args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && source ./test/terraform-validator.sh standalone']
-# Getting this error
-#ERROR: (gcloud.projects.describe) argument PROJECT_ID_OR_NUMBER: Must be specified.
-#Usage: gcloud projects describe PROJECT_ID_OR_NUMBER [optional flags]
-#  optional flags may be  --help
-#For detailed information on this command and its flags, run:
-#  gcloud projects describe --help
-#
-# "Erro" abaixo deve ser desconsiderado devido ao "no violations found"???
-#To perform exactly these actions, run the following command to apply:
-#    terraform apply "/workspace/test/integration/tmp/tfvt/standalone/plan.tfplan"
-#2022-04-05T01:30:55.114462433Z  {"version": "v1.0.0", "error_details": {"error": "[INFO] Authenticating using configured Google JSON 'credentials'...", "context": ""}}
-#2022-04-05T01:30:55.714644398Z  {"version": "v1.0.0", "error_details": {"error": "[INFO] Instantiating Google Cloud ResourceManager client for path https://cloudresourcemanager.googleapis.com/", "context": ""}}
-#2022-04-05T01:30:55.872781733Z  {"version": "v1.0.0", "error_details": {"error": "unknown resource: google_artifact_registry_repository_iam_member", "context": ""}}
-#2022-04-05T01:30:55.872784733Z  {"version": "v1.0.0", "error_details": {"error": "unsupported resource: google_bigquery_table", "context": ""}}
-#2022-04-05T01:30:55.872787426Z  {"version": "v1.0.0", "error_details": {"error": "unknown resource: google_data_catalog_policy_tag", "context": ""}}
-#2022-04-05T01:30:55.872835708Z  {"version": "v1.0.0", "error_details": {"error": "unknown resource: google_data_catalog_taxonomy_iam_binding", "context": ""}}
-#2022-04-05T01:30:55.872840392Z  {"version": "v1.0.0", "error_details": {"error": "unsupported resource: google_secret_manager_secret", "context": ""}}
-#2022-04-05T01:30:55.872844119Z  {"version": "v1.0.0", "error_details": {"error": "unsupported resource: google_app_engine_application", "context": ""}}
-#2022-04-05T01:30:55.87284827Z   {"version": "v1.0.0", "error_details": {"error": "unsupported resource: google_project_default_service_accounts", "context": ""}}
-#2022-04-05T01:30:55.87354529Z   {"version": "v1.0.0", "error_details": {"error": "unsupported resource: google_folder", "context": ""}}
-#No violations found.
 
 - id: verify-standalone
   waitFor:
     - converge-standalone
   name: 'gcr.io/cloud-foundation-cicd/$_DOCKER_IMAGE_DEVELOPER_TOOLS:$_DOCKER_TAG_VERSION_DEVELOPER_TOOLS'
-  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=verify go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd ../..']
-  # Getting this error below. I need to change the standalone_test.go to another one.
-  #
-# TestStandalone 2022-04-05T20:47:57Z command.go:179: Note: You didn't use the -out option to save this plan, so Terraform can't
-#TestStandalone 2022-04-05T20:47:57Z command.go:179: guarantee to take exactly these actions if you run "terraform apply" now.
-#                  Error:          Should not be: 2
-#                Test:           TestStandalone
-#                Messages:       plan after apply should have non-empty diff
-#TestStandalone 2022-04-05T01:37:18Z retry.go:91: terraform [output -no-color -json project_id]
-#TestStandalone 2022-04-05T01:37:18Z command.go:100: Running command terraform with args [output -no-color -json project_id]
-#TestStandalone 2022-04-05T01:37:20Z command.go:179: 
-#TestStandalone 2022-04-05T01:37:20Z command.go:179: Error: Output "project_id" not found
-#TestStandalone 2022-04-05T01:37:20Z command.go:179: 
-#TestStandalone 2022-04-05T01:37:20Z command.go:179: The output variable requested could not be found in the state file. If you
-#TestStandalone 2022-04-05T01:37:20Z command.go:179: recently added this to your configuration, be sure to run `terraform #apply`,
-#TestStandalone 2022-04-05T01:37:20Z command.go:179: since the state won't be updated with new output variables until that #command
-#TestStandalone 2022-04-05T01:37:20Z command.go:179: is run.
-#TestStandalone 2022-04-05T01:37:20Z retry.go:99: Returning due to fatal error: FatalError{Underlying: error while running #command: exit status 1; 
-#Error: Output "project_id" not found
-#The output variable requested could not be found in the state file. If you
-#recently added this to your configuration, be sure to run `terraform apply`,
-#since the state won't be updated with new output variables until that command
-#is run.}
+  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=verify go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd /workspace']
 
 - id: destroy-standalone
   waitFor:
     - verify-standalone
     - validate-standalone
   name: 'gcr.io/cloud-foundation-cicd/$_DOCKER_IMAGE_DEVELOPER_TOOLS:$_DOCKER_TAG_VERSION_DEVELOPER_TOOLS'
-  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=teardown go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd ../..']
-  #Getting error below:
-#
-#
-#TestStandalone 2022-04-05T01:56:48Z command.go:179: module.folders.google_folder.folders["test-golang2"]: Destruction complete after 1s
-#TestStandalone 2022-04-05T01:56:49Z command.go:179: │ Error: Error when reading or editing Resource 1055058813388 for IAM Member (role "serviceAccount:ci-account@sdw-data-ing-b50b88-ee23.iam.gserviceaccount.com", "roles/accesscontextmanager.policyAdmin"): Error applying IAM policy for organization "1055058813388": Error setting IAM policy for organization "1055058813388": googleapi: Error 403: The caller does not have permission, forbidden
-#
-#│ Error: Error when reading or editing Resource 1055058813388 for IAM Member (role "serviceAccount:ci-account@sdw-data-ing-b50b88-ee23.iam.gserviceaccount.com", "roles/orgpolicy.policyAdmin"): Error applying IAM policy for organization "1055058813388": Error setting IAM policy for organization "1055058813388": googleapi: Error 403: The caller does not have permission, forbidden
-#
-#Error: Error when reading or editing Resource 1055058813388 for IAM Member (role "serviceAccount:ci-account@sdw-data-ing-b50b88-ee23.iam.gserviceaccount.com", "roles/billing.user"): Error applying IAM policy for organization "1055058813388": Error setting IAM policy for organization "1055058813388": googleapi: Error 403: The caller does not have permission, forbidden
-#
-#
-### Fim do test .go
+  args: ['/bin/bash', '-c', 'source /usr/local/bin/task_helper_functions.sh && source_test_env && init_credentials && export TF_VAR_access_context_manager_policy_id=$(gcloud access-context-manager policies list --organization="${TF_VAR_org_id:?}" --format="value(name)") && cd test/integration && RUN_STAGE=teardown go test -v -run TestStandalone ./... -p 1 -timeout 0 && cd /workspace']
 
 - id: create-de-identification-template
   waitFor:
