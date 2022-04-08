@@ -14,68 +14,6 @@
  * limitations under the License.
  */
 
-### create folder
-variable "set_roles" {
-  type        = bool
-  description = "Enable setting roles via the folder admin variables."
-  default     = true 
-}
-
-variable "folder_admin_roles" {
-  type        = list(string)
-  description = "List of roles that will be applied to per folder owners on their respective folder."
-
-  default = [
-    #"roles/resourcemanager.folderViewer",
-    "roles/resourcemanager.projectCreator",#
-    "roles/compute.networkAdmin",#
-    "roles/cloudkms.cryptoOperator",
-    "roles/logging.admin",#
-    "roles/resourcemanager.projectDeleter",#
-    "roles/resourcemanager.projectIamAdmin",#
-    "roles/serviceusage.serviceUsageAdmin",#
-    "roles/resourcemanager.folderCreator",
-    "roles/resourcemanager.folderAdmin"
-  ]
-}
-
-variable "parent_id" {
-  type        = string
-  description = "Id of the resource under which the folder will be placed."
-  default     = "422287347745"
-}
-
-#variable "parent" {
-#  type        = string
-#  description = "The resource name of the parent Folder or Organization. Must be of the form folders/folder_id or organizations/org_id."
-#  default     = "folders/422287347745"
-#}
-
-variable "parent_type" {
-  type        = string
-  description = "Type of the parent resource. One of `organizations` or `folders`."
-  default     = "folders"
-}
-
-variable "names" {
-  type        = list(string)
-  description = "Folder names."
-  default     = ["new-golang5",]
-}
-
-variable "per_folder_admins" {
-  type        = map(string)
-  description = "IAM-style members per folder who will get extended permissions."
-  default     = {}
-}
-
-variable "all_folder_admins" {
-  type        = list(string)
-  description = "List of IAM-style members that will get the extended permissions across all the folders."
-  default     = []
-}
-####
-
 variable "org_id" {
   description = "The numeric organization id."
   type        = string
@@ -94,67 +32,12 @@ variable "billing_account" {
 variable "access_context_manager_policy_id" {
   description = "The id of the default Access Context Manager policy. Can be obtained by running `gcloud access-context-manager policies list --organization YOUR-ORGANIZATION_ID --format=\"value(name)\"`."
   type        = string
-
 }
 
 variable "terraform_service_account" {
   description = "The email address of the service account that will run the Terraform code."
   type        = string
 }
-
-#### Added to fix the error from verify-standalone test
-variable "data_ingestion_project_id" {
-  description = "The ID of the project in which the data ingestion resources will be created."
-  type        = list(string)
-}
-
-variable "data_governance_project_id" {
-  description = "The ID of the project in which the data governance resources will be created."
-  type        = list(string)
-}
-
-variable "non_confidential_data_project_id" {
-  description = "The ID of the project in which the Bigquery will be created."
-  type        = list(string)
-}
-###########
-
-variable "perimeter_additional_members" {
-  description = "The list of members to be added on perimeter access. To be able to see the resources protected by the VPC Service Controls add your user must be in this list. The service accounts created by this module do not need to be added to this list. Entries must be in the standard GCP form: `user:email@email.com` or `serviceAccount:my-service-account@email.com`."
-  type        = list(string)
-  default     = []
-}
-
-variable "delete_contents_on_destroy" {
-  description = "(Optional) If set to true, delete all the tables in the dataset when destroying the resource; otherwise, destroying the resource will fail if tables are present."
-  type        = bool
-  default     = false
-}
-
-/*variable "security_administrator_group" {
-  description = "Google Cloud IAM group that administers security configurations in the organization(org policies, KMS, VPC service perimeter)."
-  type        = string
-}
-
-variable "network_administrator_group" {
-  description = "Google Cloud IAM group that reviews network configuration. Typically, this includes members of the networking team."
-  type        = string
-}
-
-variable "security_analyst_group" {
-  description = "Google Cloud IAM group that monitors and responds to security incidents."
-  type        = string
-}
-
-variable "data_analyst_group" {
-  description = "Google Cloud IAM group that analyzes the data in the warehouse."
-  type        = string
-}
-
-variable "data_engineer_group" {
-  description = "Google Cloud IAM group that sets up and maintains the data pipeline and warehouse."
-  type        = string
-}*/
 
 variable "group_email" {
   description = "The group that will be assigned permissions for testing."

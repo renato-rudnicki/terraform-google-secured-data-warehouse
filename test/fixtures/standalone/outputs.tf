@@ -26,52 +26,7 @@ output "bigquery_non_confidential_table" {
   value       = module.example.bigquery_non_confidential_table
 }
 
-#####adicionado para fixar o erro do teste verify-standalone
-output "project_id" {
-  description = "The project_id used to create infra."
-  value       = var.data_ingestion_project_id[0]
+output "name" {
+  description = "Folder name."
+  value       = google_folder.folders.name
 }
-
-output "data_governance_project_id" {
-  description = "The data_governance_project_id used to create infra."
-  value       = var.data_governance_project_id[0]
-}
-
-output "non_confidential_data_project_id" {
-  description = "The non_confidential_data_project_id used to create bigquery."
-  value       = var.non_confidential_data_project_id[0]
-}
-#####
-
-#### create folder
-output "ids" {
-  description = "Folder ids."
-  value       = module.folders.ids
-}
-
-output "names" {
-  description = "Folder names."
-  value       = module.folders.names
-}
-
-#output "id" {
-#  description = "Folder id (for single use)."
-#  value       = module.folders.name
-#}
-
-output "parent_id" {
-  description = "Id of the resource under which the folder will be placed."
-  value       = var.parent_id
-}
-
-# output "ids_list" {
-#   description = "List of folder ids."
-#   value       = module.folders.ids_list
-# }
-
-
-# output "names_list" {
-#   description = "List of folder names."
-#   value       = module.folders.names_list
-# }
-##

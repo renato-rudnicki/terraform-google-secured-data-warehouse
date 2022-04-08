@@ -15,51 +15,68 @@
  */
 
 locals {
-  standalone_organization_roles = [
-    "roles/resourcemanager.organizationAdmin",
-    "roles/accesscontextmanager.policyAdmin",
-    "roles/billing.user",
-    "roles/orgpolicy.policyAdmin"
+  folder_admin_roles = [
+    "roles/resourcemanager.projectCreator",
+    "roles/compute.networkAdmin",
+    "roles/cloudkms.cryptoOperator",
+    "roles/logging.admin",
+    "roles/resourcemanager.projectDeleter",
+    "roles/resourcemanager.projectIamAdmin",
+    "roles/serviceusage.serviceUsageAdmin",
   ]
 }
 
 resource "google_organization_iam_member" "standalone-org-roles" {
-  for_each = toset(local.standalone_organization_roles)
-
   org_id = var.org_id
-  role   = each.value
+  role   = "roles/resourcemanager.folderAdmin"
   member = "serviceAccount:${var.terraform_service_account}"
 }
 
-module "folders" {
-  source = "terraform-google-modules/folders/google"
-
-  parent             = "${var.parent_type}/${var.parent_id}"
-  names              = var.names
-  set_roles          = var.set_roles
-  per_folder_admins  = var.per_folder_admins
-  all_folder_admins  = var.all_folder_admins
-  folder_admin_roles = var.folder_admin_roles
+resource "time_sleep" "wait_120_folder" {
+  create_duration = "120s"
 
   depends_on = [
     google_organization_iam_member.standalone-org-roles
   ]
 }
 
+resource "random_id" "name" {
+  byte_length = 6
+}
+
+resource "google_folder" "folders" {
+  display_name = "fldr-standalone-${random_id.name.hex}"
+  parent       = "folders/${var.folder_id}"
+
+  depends_on = [
+    time_sleep.wait_120_folder
+  ]
+}
+
+resource "google_folder_iam_member" "terraform_sa" {
+  for_each = toset(local.folder_admin_roles)
+  folder   = google_folder.folders.name
+  role     = each.value
+  member   = "serviceAccount:${var.terraform_service_account}"
+}
+
+resource "time_sleep" "wait_120" {
+  create_duration = "120s"
+
+  depends_on = [
+    google_folder_iam_member.terraform_sa
+  ]
+}
+
 module "example" {
   source                           = "../../../examples/standalone"
   org_id                           = var.org_id
-  folder_id                        = var.parent_id
+  folder_id                        = google_folder.folders.name
   billing_account                  = var.billing_account
   access_context_manager_policy_id = var.access_context_manager_policy_id
   terraform_service_account        = var.terraform_service_account
-  perimeter_additional_members     = var.perimeter_additional_members
+  perimeter_additional_members     = []
   delete_contents_on_destroy       = true
-  #security_administrator_group     = var.security_administrator_group
-  #network_administrator_group      = var.network_administrator_group
-  #security_analyst_group           = var.security_analyst_group
-  #data_analyst_group               = var.data_analyst_group
-  #data_engineer_group              = var.data_engineer_group
   data_engineer_group              = var.group_email[2]
   data_analyst_group               = var.group_email[2]
   security_analyst_group           = var.group_email[2]
@@ -67,6 +84,6 @@ module "example" {
   security_administrator_group     = var.group_email[2]
 
   depends_on = [
-    module.folders
+    time_sleep.wait_120
   ]
 }
