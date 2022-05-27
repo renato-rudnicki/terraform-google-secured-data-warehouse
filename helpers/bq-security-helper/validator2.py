@@ -51,14 +51,3 @@ else:
     print('wrong bq_column')
 
 
-####
-#ini_dict = {'a':1, 'b':2, 'c':3, 'd':2}
-#rev_dict = {}
-  
-#for key, value in ini_dict.items():
-#    rev_dict.setdefault(value, set()).add(key)
-      
-#result = [key for key, values in rev_dict.items()
-#                              if len(values) > 1]  
-#print("duplicate values", str(result))
-
